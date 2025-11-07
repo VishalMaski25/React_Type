@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>React Code Typing Practice</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: "Fira Code", monospace;
+      padding: 40px;
+    }
+    h1 { color: #38bdf8; }
+    pre {
+      background: #1e293b;
+      padding: 16px;
+      border-radius: 8px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .char.correct { color: #22c55e; }
+    .char.incorrect { color: #ef4444; }
+    .char.active {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+    .stats {
+      margin-top: 16px;
+      font-size: 18px;
+      color: #94a3b8;
+    }
+    button {
+      margin-top: 20px;
+      background: #38bdf8;
+      color: #0f172a;
+      font-weight: bold;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0ea5e9;
+    }
+  </style>
+</head>
+<body>
+  <h1>💻 React Typing Practice</h1>
+  <pre id="code"></pre>
+  <div class="stats">
+    <p>WPM: <span id="wpm">0</span> | Accuracy: <span id="accuracy">100</span>%</p>
+  </div>
+  <button onclick="nextSnippet()">Next Code</button>
+
+  <script>
+    const snippets = [
+`import { useState } from "react"; 
+export default function App() { 
+  const [text, setText] = useState(""); 
+  return ( 
+    <div style={{ padding: 20 }}> 
+      <h3>Typing Practice</h3> 
+      <input value={text} onChange={e => setText(e.target.value)} placeholder="Type here..." /> 
+      <p>You typed: {text}</p> 
+    </div> 
+  ); 
+}`,
+`import { useState } from "react";
+export default function App() {
+  const [txt, setTxt] = useState("");
+  return (
+    <div style={{ padding: 20 }}>
+      <textarea onChange={e => setTxt(e.target.value)} rows={4} />
+      <p>Words: {txt.trim().split(/\\s+/).filter(Boolean).length}</p>
+    </div>
+  );
+}`,
+`import { useState, useEffect } from "react";
+export default function App() {
+  const [t, sT] = useState(""), [sec, setS] = useState(5);
+  useEffect(() => { if (sec > 0) setTimeout(() => setS(sec - 1), 1000); }, [sec]);
+  return (
+    <div style={{ padding: 20 }}>
+      <p>Time left: {sec}s</p>
+      <input disabled={!sec} value={t} onChange={e => sT(e.target.value)} />
+      {!sec && <p>Words: {t.split(" ").filter(Boolean).length}</p>}
+    </div>
+  );
+}`,
+`import { useState } from "react";
+export default function App() {
+  const [t, setT] = useState("");
+  const limit = 50;
+  return (
+    <div style={{ padding: 20 }}>
+      <textarea maxLength={limit} value={t} onChange={e => setT(e.target.value)} />
+      <p>{t.length}/{limit} characters</p>
+    </div>
+  );
+}`,
+`import { useState } from "react";
+export default function App() {
+  const target = "hello world", [t, setT] = useState("");
+  const correct = [...t].filter((c, i) => c === target[i]).length;
+  return (
+    <div style={{ padding: 20 }}>
+      <p>{target}</p>
+      <input value={t} onChange={e => setT(e.target.value)} />
+      <p>Accuracy: {Math.round((correct / t.length || 1) * 100)}%</p>
+    </div>
+  );
+}`
+    ];
+
+    let index = 0;
+    let startTime = null;
+    let correct = 0;
+
+    const codeEl = document.getElementById("code");
+    const wpmEl = document.getElementById("wpm");
+    const accEl = document.getElementById("accuracy");
+
+    function loadSnippet() {
+      codeEl.innerHTML = "";
+      const snippet = snippets[index];
+      snippet.split("").forEach(ch => {
+        const span = document.createElement("span");
+        span.textContent = ch;
+        span.classList.add("char");
+        codeEl.appendChild(span);
+      });
+      activeIndex = 0;
+      codeEl.children[0].classList.add("active");
+      document.addEventListener("keydown", handleKey);
+      startTime = null;
+      correct = 0;
+      wpmEl.textContent = 0;
+      accEl.textContent = 100;
+    }
+
+    function handleKey(e) {
+      const chars = codeEl.querySelectorAll(".char");
+      if (!startTime) startTime = new Date();
+
+      if (e.key === "Backspace") {
+        if (activeIndex > 0) {
+          chars[activeIndex].classList.remove("active");
+          activeIndex--;
+          chars[activeIndex].classList.remove("correct", "incorrect");
+          chars[activeIndex].classList.add("active");
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (e.key === "Enter") {
+        // simulate line jump
+        let i = activeIndex;
+        while (i < chars.length && chars[i].textContent !== "\n") i++;
+        if (i < chars.length - 1) {
+          chars[activeIndex].classList.remove("active");
+          activeIndex = i + 1;
+          chars[activeIndex].classList.add("active");
+        }
+        e.preventDefault();
+        return;
+      }
+
+      const expected = chars[activeIndex]?.textContent;
+      if (e.key.length === 1) {
+        if (e.key === expected) {
+          chars[activeIndex].classList.add("correct");
+          correct++;
+        } else {
+          chars[activeIndex].classList.add("incorrect");
+        }
+        chars[activeIndex].classList.remove("active");
+        activeIndex++;
+        if (activeIndex < chars.length) {
+          chars[activeIndex].classList.add("active");
+        } else {
+          const elapsed = (new Date() - startTime) / 60000;
+          const wpm = Math.round((correct / 5) / elapsed);
+          const accuracy = Math.round((correct / chars.length) * 100);
+          wpmEl.textContent = wpm;
+          accEl.textContent = accuracy;
+          document.removeEventListener("keydown", handleKey);
+        }
+      }
+    }
+
+    function nextSnippet() {
+      document.removeEventListener("keydown", handleKey);
+      index = (index + 1) % snippets.length;
+      loadSnippet();
+    }
+
+    let activeIndex = 0;
+    loadSnippet();
+  </script>
+</body>
+</html>
